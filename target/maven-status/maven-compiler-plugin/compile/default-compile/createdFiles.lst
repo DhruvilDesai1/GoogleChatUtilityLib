@@ -1,0 +1,4 @@
+com\teamninja\utilities\GoogleChatConfig.class
+com\teamninja\utilities\GoogleChatNotifier.class
+com\teamninja\utilities\BaseTest.class
+com\teamninja\utilities\SuiteListener.class
