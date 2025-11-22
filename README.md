@@ -1,21 +1,20 @@
-# Google Chat Notifier Utility
+# Google Chat Utility Library
 
-A reusable Java library for sending Google Chat notifications from TestNG test suites. This utility allows you to easily integrate Google Chat alerts into your automation framework, providing real-time updates on test execution start and finish.
+A reusable utility for sending Google Chat notifications from TestNG suites.
 
-## Features
+## 1. How to Build
+To rebuild the library, run:
+```bash
+mvn clean install
+```
+The JAR will be generated in `target/google-chat-notifier-1.0.0.jar`.
 
-- **Automatic Notifications**: Sends notifications when a test suite starts and finishes.
-- **Rich Cards**: Supports Google Chat cards with decorated text and icons.
-- **Flexible Configuration**: Configure via code, system properties, or `.env` files.
-- **Environment Aware**: Optionally display the environment (e.g., Live, Beta) in notifications.
-- **Easy Integration**: Just extend `BaseTest` or add the `SuiteListener`.
+## 2. How to Use in Your Projects
 
-## Installation
-
-### Maven
-
-To use this library in your Maven project, install it locally or deploy it to your repository. Then add the dependency:
-
+### Step 1: Add Dependency
+**Option A: Maven (Recommended)**
+First, run `mvn clean install` in this folder.
+Then add this to your project's `pom.xml`:
 ```xml
 <dependency>
     <groupId>com.teamninja.utilities</groupId>
@@ -24,65 +23,107 @@ To use this library in your Maven project, install it locally or deploy it to yo
 </dependency>
 ```
 
-## Configuration
+**Option B: Manual JAR (For Private/Local Use)**
+If you cannot use the Maven install method, you can manually add the JAR to your project.
 
-You can configure the utility using one of the following methods (in order of precedence):
+1.  **Create a `lib` folder** in your project's root directory (same level as `pom.xml`).
+2.  **Copy the JAR**: Copy `target/google-chat-notifier-1.0.0.jar` from this project into your new `lib` folder.
+3.  **Commit the JAR**: Ensure your `.gitignore` does NOT exclude the `lib` folder. You **MUST commit this JAR** to your Git repository so that Jenkins/CI can find it.
+4.  **Update `pom.xml`**: Add the dependency with `system` scope:
 
-1.  **Programmatic**: Call `GoogleChatConfig` setters before the suite starts.
-2.  **System Properties**: Pass `-D` arguments to the JVM.
-3.  **Environment Variables**: Use a `.env` file or system environment variables.
+```xml
+<dependency>
+    <groupId>com.teamninja.utilities</groupId>
+    <artifactId>google-chat-notifier</artifactId>
+    <version>1.0.0</version>
+    <scope>system</scope>
+    <systemPath>${project.basedir}/lib/google-chat-notifier-1.0.0.jar</systemPath>
+</dependency>
+```
 
-### Configuration Keys
-
-| Key | Description | Example |
-| :--- | :--- | :--- |
-| `googleChatWebhookUrl` / `GOOGLE_CHAT_WEBHOOK_URL` | **Required**. The webhook URL for your Google Chat space. | `https://chat.googleapis.com/...` |
-| `projectName` / `PROJECT_NAME` | Name of your project to display in cards. | `My Automation Project` |
-| `environment` / `ENVIRONMENT` | (Optional) Environment name. | `Live`, `Beta` |
-| `messageType` / `MESSAGE_TYPE` | (Optional) `CARD` (default) or `TEXT`. | `CARD` |
-
-## Usage
-
-### Option 1: Extend BaseTest
-
-The easiest way to use the notifier is to extend the `BaseTest` class in your test classes.
-
+### Step 2: Extend BaseTest
+In your test classes, extend `com.teamninja.utilities.BaseTest`:
 ```java
 import com.teamninja.utilities.BaseTest;
 import org.testng.annotations.Test;
 
 public class MyTest extends BaseTest {
     @Test
-    public void testSomething() {
-        // Your test code
-    }
+    public void testSomething() { ... }
 }
 ```
 
-### Option 2: Add Listener in testng.xml
+### Step 3: Configure
+You can configure the library in 3 ways (in order of priority):
 
-If you prefer not to extend a base class, you can add the listener directly to your `testng.xml` file.
+#### A. Programmatic (Highest Priority)
+**Important:** To ensure configuration is loaded *before* the "Suite Started" notification, use a `static` block in your Test class:
+```java
+import com.teamninja.utilities.GoogleChatConfig;
+import com.teamninja.utilities.BaseTest;
+import org.testng.annotations.Test;
 
-```xml
-<suite name="My Suite">
-    <listeners>
-        <listener class-name="com.teamninja.utilities.SuiteListener"/>
-    </listeners>
+public class MyTest extends BaseTest {
+    static {
+        GoogleChatConfig.setProjectName("My Awesome App");
+        GoogleChatConfig.setEnvironment("Beta");
+        GoogleChatConfig.setWebhookUrl("https://chat.googleapis.com/...");
+        GoogleChatConfig.setMessageType("TEXT"); 
+    }
     
-    <test name="My Test">
-        <classes>
-            <class name="com.example.MyTest"/>
-        </classes>
-    </test>
-</suite>
+    @Test
+    public void testSomething() { ... }
+}
 ```
 
-## Building from Source
-
-To build the project locally:
-
+#### B. System Properties (CI/CD)
 ```bash
-mvn clean install
+mvn test -DprojectName="My App" -DmessageType="TEXT"
 ```
 
+#### C. Environment Variables / .env (Local/IDE)
+Create a `.env` file in your project root:
+```properties
+PROJECT_NAME=My App
+GOOGLE_CHAT_WEBHOOK_URL=https://chat.googleapis.com/...
+ENVIRONMENT=Beta
+MESSAGE_TYPE=TEXT
+```
 
+## 3. Features
+- **Flexible Config**: Works seamlessly in IDEs (via `.env`) and CI/CD (via System Props).
+- **Optional Environment**: If you don't specify an environment, it won't show up in the chat card.
+
+## 4. CI/CD Integration (Jenkins/Git)
+Since this is a local library, Jenkins needs to build it before running your main tests.
+
+**Recommended Strategy: "Build First"**
+Add a stage in your Jenkins pipeline to download and install this library *before* your test stage.
+
+**Example Jenkins Pipeline:**
+```groovy
+pipeline {
+    agent any
+    stages {
+        stage('Install Utility Lib') {
+            steps {
+                // 1. Download the library code
+                // Replace with your actual repo URL
+                git 'https://github.com/DhruvilDesai1/GoogleChatUtilityLib.git'
+                
+                // 2. Install it to Jenkins local Maven repo
+                sh 'mvn clean install' 
+            }
+        }
+        stage('Run Main Tests') {
+            steps {
+                // 3. Now download your actual project
+                git 'https://github.com/your-user/my-test-project.git'
+                
+                // 4. Run tests (Maven will find the lib installed in step 2)
+                sh 'mvn test'
+            }
+        }
+    }
+}
+```
