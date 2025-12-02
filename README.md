@@ -2,6 +2,8 @@
 
 A reusable utility for sending Google Chat notifications from TestNG suites.
 
+[![](https://jitpack.io/v/DhruvilDesai1/GoogleChatUtilityLib.svg)](https://jitpack.io/#DhruvilDesai1/GoogleChatUtilityLib)
+
 ## 1. Installation
 
 ### Maven
