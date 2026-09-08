@@ -1,6 +1,8 @@
 """Discover and parse JUnit XML. The universal counts source across all runners."""
 
-from typing import Iterable, Optional
+import glob
+import os
+from typing import Iterable, List, Optional, Sequence
 from xml.etree import ElementTree
 
 from .models import TestCounts
@@ -43,3 +45,49 @@ def parse_files(paths: Iterable[str]) -> Optional[TestCounts]:
         skipped=skipped,
         failed_names=tuple(failed_names),
     )
+
+
+DEFAULT_GLOBS = (
+    "target/surefire-reports/*.xml",
+    "target/failsafe-reports/*.xml",
+    "junit.xml",
+    "test-results/**/*.xml",
+    "reports/**/*.xml",
+    "build/test-results/**/*.xml",
+)
+
+_MTIME_TOLERANCE_SECONDS = 1.0
+
+
+def discover(
+    root: str,
+    patterns: Optional[Sequence[str]] = None,
+    since: Optional[float] = None,
+) -> List[str]:
+    """Find report files under root. Staleness filtering applies to defaults only."""
+    explicit = patterns is not None
+    active = tuple(patterns) if explicit else DEFAULT_GLOBS
+    cutoff = None if (explicit or since is None) else since - _MTIME_TOLERANCE_SECONDS
+
+    found = set()
+    for pattern in active:
+        for match in glob.glob(os.path.join(root, pattern), recursive=True):
+            if not os.path.isfile(match):
+                continue
+            if cutoff is not None:
+                try:
+                    if os.path.getmtime(match) < cutoff:
+                        continue
+                except OSError:
+                    continue
+            found.add(os.path.normpath(match))
+    return sorted(found)
+
+
+def collect(
+    root: str,
+    patterns: Optional[Sequence[str]] = None,
+    since: Optional[float] = None,
+) -> Optional[TestCounts]:
+    """Discover reports then parse them. None means no counts are available."""
+    return parse_files(discover(root, patterns=patterns, since=since))
