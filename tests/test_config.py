@@ -188,3 +188,25 @@ def test_machine_config_path_uses_appdata_on_windows(monkeypatch):
     path = config.machine_config_path({"APPDATA": r"C:\Users\A\AppData\Roaming"})
     assert path.endswith(os.path.join("chatnotify", "config.ini"))
     assert "Roaming" in path
+
+
+def test_named_webhook_with_dot_resolves(repo):
+    write(os.path.join(repo, ".chatnotify.ini"), "[chatnotify]\nwebhook = qa.team\n")
+    result = config.load(cwd=repo, env={"CHATNOTIFY_WEBHOOK_QA_TEAM": "https://chat.example/qa"})
+    assert result.webhook_url == "https://chat.example/qa"
+    assert result.provenance["webhook_url"] == "env: CHATNOTIFY_WEBHOOK_QA_TEAM"
+
+
+def test_named_webhook_with_slash_resolves(repo):
+    write(os.path.join(repo, ".chatnotify.ini"), "[chatnotify]\nwebhook = team/prod\n")
+    result = config.load(cwd=repo, env={"CHATNOTIFY_WEBHOOK_TEAM_PROD": "https://chat.example/p"})
+    assert result.webhook_url == "https://chat.example/p"
+
+
+def test_env_key_for_maps_all_punctuation_and_non_ascii():
+    assert config._env_key_for("qa-team") == "CHATNOTIFY_WEBHOOK_QA_TEAM"
+    assert config._env_key_for("qa.team") == "CHATNOTIFY_WEBHOOK_QA_TEAM"
+    assert config._env_key_for("team/prod") == "CHATNOTIFY_WEBHOOK_TEAM_PROD"
+    assert config._env_key_for("web:hooks") == "CHATNOTIFY_WEBHOOK_WEB_HOOKS"
+    assert config._env_key_for("equipe1") == "CHATNOTIFY_WEBHOOK_EQUIPE1"
+    assert config._env_key_for("\u00e9quipe") == "CHATNOTIFY_WEBHOOK__QUIPE"

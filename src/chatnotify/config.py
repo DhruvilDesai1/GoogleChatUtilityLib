@@ -50,6 +50,19 @@ def _truthy(value) -> bool:
     return _clean(value) is not None and str(value).strip().lower() in _TRUTHY
 
 
+def _env_key_for(name: str) -> str:
+    """Build a shell-usable env var name from a webhook name.
+
+    Any character outside A-Z and 0-9 becomes an underscore, so a name like
+    "qa.team" or "team/prod" still yields a key a user can actually export.
+    """
+    safe = "".join(
+        char if ("A" <= char <= "Z" or "0" <= char <= "9") else "_"
+        for char in name.upper()
+    )
+    return "CHATNOTIFY_WEBHOOK_" + safe
+
+
 def machine_config_path(env: Optional[Mapping[str, str]] = None) -> str:
     env = os.environ if env is None else env
     if os.name == "nt":
@@ -113,7 +126,7 @@ def _resolve_webhook(
 
     name = _ini_get(repo_ini, "chatnotify", "webhook") or _clean(env.get("CHATNOTIFY_WEBHOOK_NAME"))
     if name:
-        env_key = "CHATNOTIFY_WEBHOOK_" + name.upper().replace("-", "_").replace(" ", "_")
+        env_key = _env_key_for(name)
         from_env = _clean(env.get(env_key))
         if from_env:
             return from_env, "env: %s" % env_key
