@@ -154,6 +154,53 @@ def doctor_command(args: argparse.Namespace) -> int:
     return 0 if delivered else 1
 
 
+_INIT_TEMPLATE = """; chatnotify repository config - safe to commit, contains no secrets.
+; Set the webhook URL in your environment instead:
+;   CHATNOTIFY_WEBHOOK_URL=...
+[chatnotify]
+project = %s
+message_type = CARD
+"""
+
+
+def _ensure_gitignored(path: str, entry: str) -> None:
+    existing = ""
+    if os.path.exists(path):
+        try:
+            with open(path, "r", encoding="utf-8") as handle:
+                existing = handle.read()
+        except (OSError, UnicodeDecodeError):
+            return
+    if entry in existing.split():
+        return
+    separator = "" if (not existing or existing.endswith("\n")) else "\n"
+    try:
+        with open(path, "a", encoding="utf-8") as handle:
+            handle.write("%s%s\n" % (separator, entry))
+    except OSError:
+        pass
+
+
+def init_command(args: argparse.Namespace) -> int:
+    target = os.path.join(os.getcwd(), ".chatnotify.ini")
+    if os.path.exists(target):
+        print("chatnotify: .chatnotify.ini already exists; not overwriting", file=sys.stderr)
+        return 1
+
+    project = getattr(args, "project", None) or os.path.basename(os.path.abspath(os.getcwd()))
+    with open(target, "w", encoding="utf-8") as handle:
+        handle.write(_INIT_TEMPLATE % project)
+
+    _ensure_gitignored(os.path.join(os.getcwd(), ".gitignore"), ".env")
+
+    print("Created .chatnotify.ini with project = %s" % project)
+    print("Added .env to .gitignore")
+    print("")
+    print("Next: set your webhook URL, then verify with `chatnotify doctor`")
+    print("  CHATNOTIFY_WEBHOOK_URL=https://chat.googleapis.com/v1/spaces/...")
+    return 0
+
+
 def main(argv: Optional[Sequence[str]] = None) -> int:
     raw = list(sys.argv[1:]) if argv is None else list(argv)
     own, command = split_argv(raw)
