@@ -4,6 +4,12 @@ A reusable utility for sending Google Chat notifications from TestNG suites.
 
 [![](https://jitpack.io/v/DhruvilDesai1/GoogleChatUtilityLib.svg)](https://jitpack.io/#DhruvilDesai1/GoogleChatUtilityLib)
 
+> **This library is superseded.** It only supports TestNG. From `v2.0.0` onward this
+> project ships `chatnotify`, a single command-line tool covering TestNG, JUnit, pytest,
+> Jest, Mocha, Playwright, Cypress, and plain scripts. `v1.1.0` is the final release of
+> the Java library — upgrade to it if you are on `v1.0.1` or earlier, because those
+> versions can abort your test suite when the webhook is unreachable.
+
 ## 1. Installation
 
 ### Maven
@@ -20,7 +26,7 @@ Add the JitPack repository and the dependency to your `pom.xml`:
 <dependency>
     <groupId>com.github.DhruvilDesai1</groupId>
     <artifactId>GoogleChatUtilityLib</artifactId>
-    <version>v1.0.1</version>
+    <version>v1.1.0</version>
 </dependency>
 ```
 
@@ -76,6 +82,10 @@ GOOGLE_CHAT_WEBHOOK_URL=https://chat.googleapis.com/...
 ENVIRONMENT=Beta
 MESSAGE_TYPE=TEXT
 ```
+
+> **Add `.env` to your `.gitignore` before saving a webhook URL in it.** A Google Chat
+> webhook URL is a credential: anyone holding it can post to your space. Committing one
+> to a repository leaks it.
 
 ## 4. Features
 - **Easy Integration**: Send notifications to Google Chat from TestNG suites.
