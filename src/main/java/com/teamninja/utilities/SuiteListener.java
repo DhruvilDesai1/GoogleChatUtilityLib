@@ -3,6 +3,8 @@ package com.teamninja.utilities;
 import io.github.cdimascio.dotenv.Dotenv;
 import org.testng.ISuite;
 import org.testng.ISuiteListener;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 public class SuiteListener implements ISuiteListener {
@@ -55,30 +57,43 @@ public class SuiteListener implements ISuiteListener {
         return null;
     }
 
+    private static final int MAX_LISTED_CLASSES = 20;
+
+    static String formatTestFiles(List<String> classNames) {
+        StringBuilder builder = new StringBuilder();
+        int listed = Math.min(classNames.size(), MAX_LISTED_CLASSES);
+        for (int i = 0; i < listed; i++) {
+            builder.append("- ").append(classNames.get(i)).append("\n");
+        }
+        int remaining = classNames.size() - listed;
+        if (remaining > 0) {
+            builder.append("...and ").append(remaining).append(" more\n");
+        }
+        return builder.toString();
+    }
+
     @Override
     public void onStart(ISuite suite) {
-        StringBuilder testFiles = new StringBuilder();
+        List<String> classNames = new ArrayList<>();
 
-        // Logic to scan for test files
         suite.getXmlSuite().getTests().forEach(test -> {
-            test.getXmlClasses().forEach(cls -> {
-                testFiles.append("- ").append(cls.getName()).append("\n");
-            });
+            test.getXmlClasses().forEach(cls -> classNames.add(cls.getName()));
         });
 
         // If no classes found in XML (e.g. running from IDE context), try to get from
         // methods
-        if (testFiles.length() == 0) {
+        if (classNames.isEmpty()) {
             suite.getAllMethods().stream()
                     .map(m -> m.getTestClass().getName())
                     .distinct()
-                    .forEach(name -> testFiles.append("- ").append(name).append("\n"));
+                    .forEach(classNames::add);
         }
 
         String projectName = getProjectName();
         String environment = getEnvironment();
 
-        GoogleChatNotifier.sendStartNotification(projectName, suite.getName(), testFiles.toString(), environment);
+        GoogleChatNotifier.sendStartNotification(projectName, suite.getName(),
+                formatTestFiles(classNames), environment);
     }
 
     @Override
