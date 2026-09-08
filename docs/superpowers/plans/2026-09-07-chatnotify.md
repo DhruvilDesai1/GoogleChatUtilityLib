@@ -228,7 +228,7 @@ def test_ci_info_detected_reflects_provider():
 - [ ] **Step 6: Run the test to verify it fails**
 
 ```bash
-cd /c/Users/Adit/IdeaProjects/chatnotify && pip install -e ".[dev]" && python -m pytest tests/test_models.py -v
+pip install -e ".[dev]" && python -m pytest tests/test_models.py -v
 ```
 
 Expected: collection error — `ModuleNotFoundError: No module named 'chatnotify.models'`.
