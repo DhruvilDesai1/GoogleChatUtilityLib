@@ -7,7 +7,10 @@ import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
 
 public class GoogleChatNotifierTest {
 
@@ -93,6 +96,35 @@ public class GoogleChatNotifierTest {
             }
         } finally {
             server.stop(0);
+        }
+    }
+
+    @Test(timeOut = 30000)
+    public void unresponsiveServerFailsWithinSocketTimeout() throws Exception {
+        try (ServerSocket server = new ServerSocket(0, 1, InetAddress.getLoopbackAddress())) {
+            Thread accepter = new Thread(() -> {
+                try {
+                    // Accept the connection, then never respond.
+                    Socket accepted = server.accept();
+                    Thread.sleep(25000);
+                    accepted.close();
+                } catch (Exception ignored) {
+                    // Test finished; the socket was closed underneath us.
+                }
+            });
+            accepter.setDaemon(true);
+            accepter.start();
+
+            GoogleChatConfig.setWebhookUrl("http://127.0.0.1:" + server.getLocalPort() + "/webhook");
+            long startedAt = System.currentTimeMillis();
+            try {
+                GoogleChatNotifier.sendNotification("{\"text\":\"hi\"}");
+            } catch (Throwable t) {
+                Assert.fail("sendNotification must not propagate: " + t);
+            }
+            long elapsed = System.currentTimeMillis() - startedAt;
+            Assert.assertTrue(elapsed < 20000,
+                    "expected the socket timeout to bound the call, but it took " + elapsed + "ms");
         }
     }
 }

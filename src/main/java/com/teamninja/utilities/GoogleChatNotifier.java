@@ -2,6 +2,8 @@ package com.teamninja.utilities;
 
 import io.github.cdimascio.dotenv.Dotenv;
 import io.restassured.RestAssured;
+import io.restassured.config.HttpClientConfig;
+import io.restassured.config.RestAssuredConfig;
 import io.restassured.http.ContentType;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -10,6 +12,16 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 public class GoogleChatNotifier {
+
+        private static final int CONNECT_TIMEOUT_MS = 5000;
+        private static final int SOCKET_TIMEOUT_MS = 10000;
+
+        private static RestAssuredConfig timeoutConfig() {
+                return RestAssuredConfig.config().httpClient(
+                                HttpClientConfig.httpClientConfig()
+                                                .setParam("http.connection.timeout", CONNECT_TIMEOUT_MS)
+                                                .setParam("http.socket.timeout", SOCKET_TIMEOUT_MS));
+        }
 
         private static String getWebhookUrl() {
                 // 1. Programmatic
@@ -63,6 +75,7 @@ public class GoogleChatNotifier {
 
                 try {
                         RestAssured.given()
+                                        .config(timeoutConfig())
                                         .contentType(ContentType.JSON)
                                         .body(jsonPayload)
                                         .post(webhookUrl)
