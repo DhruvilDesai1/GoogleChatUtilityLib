@@ -50,3 +50,21 @@ def test_missing_file_returns_none():
 
 def test_empty_input_returns_none():
     assert reports.parse_files([]) is None
+
+
+def test_summary_attributes_are_ignored_in_favour_of_real_cases():
+    """The testsuite element claims 99 tests and 50 failures; only 3 cases exist.
+
+    This is the regression guard for the whole module: an implementation that read
+    <testsuite> attributes instead of walking <testcase> elements would report the
+    fictional 99/50 here. That mistake is how the retired Java library double-counted
+    retried tests.
+    """
+    counts = reports.parse_files([fixture("lying_attributes.xml")])
+    assert (counts.total, counts.passed, counts.failed, counts.skipped) == (3, 1, 1, 1)
+
+
+def test_case_without_name_attribute_falls_back_to_placeholder():
+    counts = reports.parse_files([fixture("lying_attributes.xml")])
+    assert counts.failed_names == ("retry.Suite.flakyFailed",)
+    assert counts.skipped == 1

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="retry.Suite" tests="99" errors="40" failures="50" skipped="9" time="1.0">
+  <testcase classname="retry.Suite" name="flakyPassed" time="0.1"/>
+  <testcase classname="retry.Suite" name="flakyFailed" time="0.1">
+    <failure message="assertion failed">stack</failure>
+  </testcase>
+  <testcase classname="retry.Suite" time="0.0">
+    <skipped message="no name attribute on purpose"/>
+  </testcase>
+</testsuite>
