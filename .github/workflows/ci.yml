@@ -13,6 +13,19 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
         python-version: ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13"]
+        exclude:
+          # Python 3.8 has no hosted build on the current runner images:
+          # ubuntu-latest is 24.04 (dropped OpenSSL 1.1) and macos-latest is arm64.
+          - os: ubuntu-latest
+            python-version: "3.8"
+          - os: macos-latest
+            python-version: "3.8"
+        include:
+          # ...so cover the 3.8 floor on the last images that still provide it.
+          - os: ubuntu-22.04
+            python-version: "3.8"
+          - os: macos-13
+            python-version: "3.8"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

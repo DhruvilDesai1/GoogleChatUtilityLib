@@ -50,7 +50,7 @@ correct behaviour for plain scripts.
 
 Highest priority first:
 
-1. CLI flag — `--project`, `--env`, `--message-type`, `--report`
+1. CLI flag — `--project`, `--env`, `--message-type`, `--report`, `--webhook-url`
 2. Environment variable — `CHATNOTIFY_WEBHOOK_URL`, `CHATNOTIFY_PROJECT`, `CHATNOTIFY_ENV`
 3. `.env` in the repo root
 4. `.chatnotify.ini` in the repo root (committed, no secrets)
