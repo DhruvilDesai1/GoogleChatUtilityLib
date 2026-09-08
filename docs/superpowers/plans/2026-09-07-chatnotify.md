@@ -10,7 +10,7 @@
 
 **Spec:** `docs/superpowers/specs/2026-09-07-chatnotify-design.md`
 
-**Project root:** `C:\Users\Adit\IdeaProjects\chatnotify` — a new repository, separate from `GoogleChatUtilityLib`. All paths and commands in this plan are relative to that root unless stated otherwise.
+**Project root:** `C:\Users\Adit\IdeaProjects\GoogleChatUtilityLib` — this repository. The retired Java library is removed in Task 1 Step 1, *after* the v1.1.0 patch plan has tagged it, so tags `v1.0.1` and `v1.1.0` remain buildable by JitPack forever. All paths and commands are relative to this root.
 
 ## Global Constraints
 
@@ -93,14 +93,25 @@ Responsibility boundaries: `render.py` never imports `transport` or `config`; `r
 - Consumes: nothing (first task).
 - Produces: `chatnotify.__version__: str`. From `models`: constants `CARD`, `TEXT`, `PASSED`, `FAILED`, `INTERRUPTED`; frozen dataclasses `TestCounts(total: int, passed: int, failed: int, skipped: int, failed_names: Tuple[str, ...] = ())`, `CiInfo(provider, branch, commit, actor, build_url — all Optional[str], default None)` with property `detected: bool`, `RunMeta(project: str, command: str, run_id: str, started_at: str, version: str, environment: Optional[str] = None, ci: CiInfo = CiInfo())`, `RunResult(exit_code: int, duration_seconds: float, interrupted: bool = False)`; and function `resolve_status(result: RunResult, counts: Optional[TestCounts]) -> str`.
 
-- [ ] **Step 1: Create the repository and directory skeleton**
+- [ ] **Step 1: Remove the retired Java library and create the Python skeleton**
+
+Do this only after the v1.1.0 patch plan has committed and tagged `v1.1.0`. Verify first:
 
 ```bash
-mkdir -p /c/Users/Adit/IdeaProjects/chatnotify/src/chatnotify
-mkdir -p /c/Users/Adit/IdeaProjects/chatnotify/tests/fixtures/reports
-mkdir -p /c/Users/Adit/IdeaProjects/chatnotify/tests/fixtures/cards
-cd /c/Users/Adit/IdeaProjects/chatnotify && git init
+git tag | grep -x v1.1.0
 ```
+
+Expected: `v1.1.0`. If it is absent, stop - removing the Java source before that tag
+exists would leave consumers of `v1.0.1` with no patched release to upgrade to.
+
+```bash
+git rm -r --quiet src/main/java src/test/java pom.xml jitpack.yml
+mkdir -p src/chatnotify tests/fixtures/reports tests/fixtures/cards
+git commit -m "chore!: remove retired TestNG library, superseded by chatnotify v2"
+```
+
+The Java sources stay in history and at tags `v1.0.0`, `v1.0.1`, and `v1.1.0`, so JitPack
+can still build every published version.
 
 - [ ] **Step 2: Write `pyproject.toml`**
 
@@ -113,7 +124,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "chatnotify"
-version = "1.0.0"
+version = "2.0.0"
 description = "Post Google Chat notifications when any test suite or script starts and finishes"
 requires-python = ">=3.8"
 dependencies = []
@@ -131,7 +142,10 @@ where = ["src"]
 testpaths = ["tests"]
 ```
 
-- [ ] **Step 3: Write `.gitignore`**
+- [ ] **Step 3: Extend `.gitignore`**
+
+The repository already has a `.gitignore` carrying Maven and IDE entries. **Append** these
+Python entries; do not replace the file.
 
 ```
 __pycache__/
@@ -149,7 +163,7 @@ dist/
 ```python
 """chatnotify - post Google Chat notifications around any command."""
 
-__version__ = "1.0.0"
+__version__ = "2.0.0"
 ```
 
 - [ ] **Step 5: Write the failing test for the status rule**
@@ -1133,7 +1147,7 @@ def meta(environment=None, ci=None):
         command="pytest tests/",
         run_id="run-1",
         started_at="2026-09-07 10:04:11",
-        version="1.0.0",
+        version="2.0.0",
         environment=environment,
         ci=ci or CiInfo(),
     )
@@ -1187,7 +1201,7 @@ def test_html_in_project_name_is_escaped():
         command="pytest",
         run_id="r",
         started_at="2026-09-07 10:04:11",
-        version="1.0.0",
+        version="2.0.0",
     )
     rendered = json.dumps(render.start(hostile, message_type=CARD))
     assert "<script>" not in rendered
@@ -1418,7 +1432,7 @@ exactly this omission.
           }
         ],
         "footer": {
-          "text": "chatnotify v1.0.0"
+          "text": "chatnotify v2.0.0"
         }
       }
     }
@@ -1451,7 +1465,7 @@ def meta(environment=None, ci=None):
         command="pytest tests/",
         run_id="run-1",
         started_at="2026-09-07 10:04:11",
-        version="1.0.0",
+        version="2.0.0",
         environment=environment,
         ci=ci or CiInfo(),
     )
@@ -1506,7 +1520,7 @@ def test_failure_list_is_truncated_at_ten():
 
 def test_footer_carries_the_version():
     payload = render.finish(meta(), RunResult(exit_code=0, duration_seconds=1.0), None)
-    assert payload["cardsV2"][0]["card"]["footer"]["text"] == "chatnotify v1.0.0"
+    assert payload["cardsV2"][0]["card"]["footer"]["text"] == "chatnotify v2.0.0"
 
 
 def test_build_button_present_when_ci_detected():
@@ -2660,7 +2674,7 @@ def test_version_flag_prints_version(capsys):
         cli.main(["--version"])
     except SystemExit:
         pass
-    assert "1.0.0" in capsys.readouterr().out
+    assert "2.0.0" in capsys.readouterr().out
 
 
 def test_entrypoint_exits_two_when_crash_precedes_child(monkeypatch, capsys):
@@ -2937,7 +2951,7 @@ def test_doctor_prints_version_and_machine_config_path(tmp_path, monkeypatch, ca
     monkeypatch.setattr("chatnotify.config.os.environ", {})
     cli.main(["doctor"])
     out = capsys.readouterr().out
-    assert "1.0.0" in out
+    assert "2.0.0" in out
     assert "config.ini" in out
 ```
 
@@ -3331,7 +3345,7 @@ one tool, no per-framework plugins.
 
 ## Install
 
-    pip install "git+https://github.com/DhruvilDesai1/chatnotify@v1.0.0"
+    pip install "git+https://github.com/DhruvilDesai1/chatnotify@v2.0.0"
 
 No runtime dependencies. Python 3.8+.
 
@@ -3467,7 +3481,7 @@ jobs:
 python -m zipapp src/chatnotify -m "chatnotify.cli:entrypoint" -o chatnotify.pyz && python chatnotify.pyz --version
 ```
 
-Expected: `1.0.0`. The `src/chatnotify` directory is zipped as the package root, so the
+Expected: `2.0.0`. The `src/chatnotify` directory is zipped as the package root, so the
 relative imports inside the modules resolve.
 
 - [ ] **Step 7: Confirm the zero-dependency constraint mechanically**
@@ -3483,7 +3497,7 @@ Expected: no output. Any line printed is a third-party import and a constraint v
 ```bash
 git add tests/test_e2e.py README.md .github/workflows/ci.yml
 git commit -m "test: add end-to-end verification, README, and CI matrix"
-git tag v1.0.0
+git tag v2.0.0
 ```
 
 ---
