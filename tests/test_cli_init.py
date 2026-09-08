@@ -62,3 +62,20 @@ def test_init_honours_project_flag(tmp_path, monkeypatch):
     cli.init_command(args)
     content = (tmp_path / ".chatnotify.ini").read_text(encoding="utf-8")
     assert "project = Explicit Name" in content
+
+
+def test_init_warns_instead_of_lying_when_gitignore_update_fails(tmp_path, monkeypatch, capsys):
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(cli, "_ensure_gitignored", lambda path, entry: False)
+    assert cli.main(["init"]) == 0
+    captured = capsys.readouterr()
+    assert "Added .env to .gitignore" not in captured.out
+    assert "could not update .gitignore" in captured.err
+
+
+def test_ensure_gitignored_reports_success(tmp_path):
+    target = str(tmp_path / ".gitignore")
+    assert cli._ensure_gitignored(target, ".env") is True
+    assert cli._ensure_gitignored(target, ".env") is True
+    with open(target, encoding="utf-8") as handle:
+        assert handle.read().split().count(".env") == 1

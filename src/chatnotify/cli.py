@@ -163,22 +163,24 @@ message_type = CARD
 """
 
 
-def _ensure_gitignored(path: str, entry: str) -> None:
+def _ensure_gitignored(path: str, entry: str) -> bool:
+    """Append `entry` to the gitignore at `path`. Returns True if it is present after."""
     existing = ""
     if os.path.exists(path):
         try:
             with open(path, "r", encoding="utf-8") as handle:
                 existing = handle.read()
         except (OSError, UnicodeDecodeError):
-            return
+            return False
     if entry in existing.split():
-        return
+        return True
     separator = "" if (not existing or existing.endswith("\n")) else "\n"
     try:
         with open(path, "a", encoding="utf-8") as handle:
             handle.write("%s%s\n" % (separator, entry))
     except OSError:
-        pass
+        return False
+    return True
 
 
 def init_command(args: argparse.Namespace) -> int:
@@ -191,10 +193,16 @@ def init_command(args: argparse.Namespace) -> int:
     with open(target, "w", encoding="utf-8") as handle:
         handle.write(_INIT_TEMPLATE % project)
 
-    _ensure_gitignored(os.path.join(os.getcwd(), ".gitignore"), ".env")
+    if _ensure_gitignored(os.path.join(os.getcwd(), ".gitignore"), ".env"):
+        print("Added .env to .gitignore")
+    else:
+        print(
+            "chatnotify: could not update .gitignore - add `.env` to it yourself before"
+            " putting a webhook URL in a .env file, or you risk committing a credential.",
+            file=sys.stderr,
+        )
 
     print("Created .chatnotify.ini with project = %s" % project)
-    print("Added .env to .gitignore")
     print("")
     print("Next: set your webhook URL, then verify with `chatnotify doctor`")
     print("  CHATNOTIFY_WEBHOOK_URL=https://chat.googleapis.com/v1/spaces/...")
