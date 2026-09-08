@@ -15,8 +15,12 @@ _REPLY_OPTION = "REPLY_MESSAGE_FALLBACK_TO_NEW_THREAD"
 
 
 def _warn(message: str, quiet: bool) -> None:
-    if not quiet:
+    if quiet:
+        return
+    try:
         print("chatnotify: " + message, file=sys.stderr)
+    except Exception:
+        pass
 
 
 def _thread_url(url: str, thread_key: str) -> str:
@@ -76,6 +80,8 @@ def post(
             return False
 
         return False
+    except (KeyboardInterrupt, SystemExit):
+        raise
     except BaseException as error:  # never fatal, by contract
         _warn("notification error (%s)" % type(error).__name__, quiet)
         return False

@@ -1,3 +1,7 @@
+import urllib.error
+
+import pytest
+
 from chatnotify import transport
 
 
@@ -51,12 +55,28 @@ def test_unserialisable_payload_returns_false_without_raising(webhook):
     assert transport.post(webhook.url, {"bad": object()}) is False
 
 
-def test_webhook_url_never_appears_in_stderr(capsys):
-    url = "http://127.0.0.1:1/webhook?key=SUPERSECRET"
-    transport.post(url, {"text": "hi"}, sleep=lambda _: None)
+def test_webhook_url_never_appears_in_stderr(monkeypatch, capsys):
+    """An exception whose text embeds the URL must not leak it into logs."""
+    url = "https://chat.example/webhook?key=SUPERSECRET"
+
+    def leaky_urlopen(*args, **kwargs):
+        raise urllib.error.URLError("failed opening %s" % url)
+
+    monkeypatch.setattr(transport.urllib.request, "urlopen", leaky_urlopen)
+    assert transport.post(url, {"text": "hi"}, sleep=lambda _: None) is False
     captured = capsys.readouterr()
     assert "SUPERSECRET" not in captured.err
     assert "SUPERSECRET" not in captured.out
+
+
+def test_keyboard_interrupt_propagates(monkeypatch):
+    """Ctrl-C is a request to stop, not a webhook failure to swallow."""
+    def interrupted_urlopen(*args, **kwargs):
+        raise KeyboardInterrupt()
+
+    monkeypatch.setattr(transport.urllib.request, "urlopen", interrupted_urlopen)
+    with pytest.raises(KeyboardInterrupt):
+        transport.post("https://chat.example/hook", {"text": "hi"}, sleep=lambda _: None)
 
 
 def test_quiet_suppresses_warnings(webhook, capsys):
