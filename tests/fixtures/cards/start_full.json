@@ -1,0 +1,74 @@
+{
+  "cardsV2": [
+    {
+      "cardId": "chatnotify-run-1",
+      "card": {
+        "header": {
+          "title": "Payments API",
+          "subtitle": "Started"
+        },
+        "sections": [
+          {
+            "widgets": [
+              {
+                "decoratedText": {
+                  "startIcon": {"knownIcon": "CLOCK"},
+                  "topLabel": "Start Time",
+                  "text": "2026-09-07 10:04:11"
+                }
+              },
+              {
+                "decoratedText": {
+                  "startIcon": {"iconUrl": "https://fonts.gstatic.com/s/e/notoemoji/15.0/1f30d/512.png"},
+                  "topLabel": "Environment",
+                  "text": "staging"
+                }
+              },
+              {
+                "textParagraph": {
+                  "text": "<b>Command:</b><br>pytest tests/"
+                }
+              }
+            ]
+          },
+          {
+            "header": "GitHub Actions",
+            "widgets": [
+              {
+                "decoratedText": {
+                  "startIcon": {"knownIcon": "BOOKMARK"},
+                  "topLabel": "Branch",
+                  "text": "feature/checkout"
+                }
+              },
+              {
+                "decoratedText": {
+                  "startIcon": {"knownIcon": "DESCRIPTION"},
+                  "topLabel": "Commit",
+                  "text": "a1b2c3d4"
+                }
+              },
+              {
+                "decoratedText": {
+                  "startIcon": {"knownIcon": "PERSON"},
+                  "topLabel": "Triggered By",
+                  "text": "dhruvil"
+                }
+              },
+              {
+                "buttonList": {
+                  "buttons": [
+                    {
+                      "text": "View build",
+                      "onClick": {"openLink": {"url": "https://github.com/o/r/actions/runs/9"}}
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
