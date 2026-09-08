@@ -19,7 +19,7 @@ Every task's requirements implicitly include this section.
 - **Python floor: 3.8.** No walrus-only idioms are banned, but no `tomllib` (3.11+), no `functools.cache` (3.9+), no `dict |` merge (3.9+), no `X | Y` type unions in annotations (3.10+). Use `typing.Optional` / `typing.Dict`.
 - **Zero runtime dependencies.** If a task needs a third-party import at runtime, the task is wrong. pytest is dev-only.
 - **Exit-code transparency.** `chatnotify run -- <cmd>` exits with exactly `<cmd>`'s code. Never alter it.
-- **Notification failure is never fatal.** `transport.post()` returns a bool and never raises.
+- **Notification failure is never fatal.** `transport.post()` returns a bool and never raises, with one deliberate exception: `KeyboardInterrupt` and `SystemExit` are re-raised so Ctrl-C stays responsive.
 - **Exit code is authoritative for pass/fail.** Status is `FAILED` if `exit_code != 0` **or** `failed > 0`. Never derive status from counts alone.
 - **The webhook URL is never logged**, at any verbosity, in any message, including exception text.
 - **Windows is a first-class target.** No POSIX-only signal assumptions, `shell=False` always, `os.path.join` for glob roots.

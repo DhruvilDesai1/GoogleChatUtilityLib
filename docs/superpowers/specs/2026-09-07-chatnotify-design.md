@@ -122,7 +122,10 @@ chatnotify run --project X -- pytest tests/
    exactly what `pytest` exited with. Stdout and stderr stream through live and
    unbuffered. Wrapping a command must never change whether CI passes.
 2. **Notification failure is never fatal.** `transport.post()` catches
-   `BaseException`, writes to stderr, and returns. A top-level guard in `cli.py`
+   `BaseException`, writes to stderr, and returns — except `KeyboardInterrupt` and
+   `SystemExit`, which are re-raised. The rule exists so a *webhook* problem cannot
+   fail a build; a user asking the process to stop is not a webhook problem, and
+   swallowing Ctrl-C would leave the process unresponsive for up to ~30s during retries. A top-level guard in `cli.py`
    does the same for the whole program: a bug in `chatnotify` exits with the
    child's code, not its own.
 3. **Exit code is authoritative for pass/fail.** Status is `FAILED` if
