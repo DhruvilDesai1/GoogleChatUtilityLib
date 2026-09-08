@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<testsuites>
+  <testsuite name="pytest" errors="0" failures="1" skipped="1" tests="4" time="0.412">
+    <testcase classname="tests.test_math" name="test_add" time="0.001"/>
+    <testcase classname="tests.test_math" name="test_subtract" time="0.001"/>
+    <testcase classname="tests.test_math" name="test_divide" time="0.002">
+      <failure message="assert 1 == 2">E assert 1 == 2</failure>
+    </testcase>
+    <testcase classname="tests.test_math" name="test_modulo" time="0.000">
+      <skipped type="pytest.skip" message="not implemented"/>
+    </testcase>
+  </testsuite>
+</testsuites>
