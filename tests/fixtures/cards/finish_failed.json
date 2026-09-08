@@ -1,0 +1,80 @@
+{
+  "cardsV2": [
+    {
+      "cardId": "chatnotify-run-1",
+      "card": {
+        "header": {
+          "title": "Payments API",
+          "subtitle": "Failed"
+        },
+        "sections": [
+          {
+            "header": "Execution Summary",
+            "widgets": [
+              {
+                "decoratedText": {
+                  "startIcon": {"knownIcon": "CLOCK"},
+                  "topLabel": "Duration",
+                  "text": "3m 12s"
+                }
+              },
+              {
+                "decoratedText": {
+                  "startIcon": {"knownIcon": "STAR"},
+                  "topLabel": "Total Tests",
+                  "text": "10"
+                }
+              },
+              {
+                "decoratedText": {
+                  "startIcon": {"knownIcon": "DESCRIPTION"},
+                  "topLabel": "Exit Code",
+                  "text": "1"
+                }
+              }
+            ]
+          },
+          {
+            "header": "Results",
+            "widgets": [
+              {
+                "decoratedText": {
+                  "startIcon": {"iconUrl": "https://fonts.gstatic.com/s/e/notoemoji/15.0/2705/512.png"},
+                  "topLabel": "Passed",
+                  "text": "7"
+                }
+              },
+              {
+                "decoratedText": {
+                  "startIcon": {"iconUrl": "https://fonts.gstatic.com/s/e/notoemoji/15.0/274c/512.png"},
+                  "topLabel": "Failed",
+                  "text": "2"
+                }
+              },
+              {
+                "decoratedText": {
+                  "startIcon": {"iconUrl": "https://fonts.gstatic.com/s/e/notoemoji/15.0/26a0/512.png"},
+                  "topLabel": "Skipped",
+                  "text": "1"
+                }
+              }
+            ]
+          },
+          {
+            "header": "Failures",
+            "widgets": [
+              {
+                "textParagraph": {
+                  "text": "tests.test_cart.test_add<br>tests.test_cart.test_remove"
+                }
+              }
+            ]
+          }
+        ],
+        "footer": {
+          "text": "chatnotify v2.0.0"
+        }
+      }
+    }
+  ]
+}

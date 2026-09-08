@@ -3,7 +3,17 @@
 from html import escape
 from typing import List, Optional, Sequence, Tuple
 
-from .models import CARD, TEXT, RunMeta
+from .models import (
+    CARD,
+    FAILED,
+    INTERRUPTED,
+    PASSED,
+    RunMeta,
+    RunResult,
+    TestCounts,
+    TEXT,
+    resolve_status,
+)
 
 MAX_FAILED_NAMES = 10
 
@@ -94,3 +104,83 @@ def start(meta: RunMeta, message_type: str = CARD) -> dict:
     if ci_section:
         sections.append(ci_section)
     return _cards_v2(meta, "Started", sections)
+
+
+_SUBTITLES = {PASSED: "Passed", FAILED: "Failed", INTERRUPTED: "Interrupted"}
+
+
+def format_duration(seconds: float) -> str:
+    total = int(seconds)
+    hours, remainder = divmod(total, 3600)
+    minutes, secs = divmod(remainder, 60)
+    if hours:
+        return "%dh %dm %ds" % (hours, minutes, secs)
+    if minutes:
+        return "%dm %ds" % (minutes, secs)
+    return "%ds" % secs
+
+
+def finish(
+    meta: RunMeta,
+    result: RunResult,
+    counts: Optional[TestCounts],
+    message_type: str = CARD,
+) -> dict:
+    status = resolve_status(result, counts)
+    duration = format_duration(result.duration_seconds)
+
+    if message_type == TEXT:
+        lines = [
+            "*%s - %s*" % (meta.project, _SUBTITLES[status]),
+            "Duration: %s" % duration,
+        ]
+        if meta.environment:
+            lines.append("Environment: %s" % meta.environment)
+        if counts is not None:
+            lines.append(
+                "Total: %d | Passed: %d | Failed: %d | Skipped: %d"
+                % (counts.total, counts.passed, counts.failed, counts.skipped)
+            )
+            kept, extra = _truncate(counts.failed_names, MAX_FAILED_NAMES)
+            if kept:
+                lines.append("Failures:")
+                lines.extend(kept)
+                if extra:
+                    lines.append("...and %d more" % extra)
+        lines.append("Exit Code: %d" % result.exit_code)
+        return {"text": "\n".join(lines)}
+
+    summary = [_decorated("Duration", duration, known_icon="CLOCK")]
+    if meta.environment:
+        summary.append(_decorated("Environment", meta.environment, icon_url=ICON_ENVIRONMENT))
+    if counts is not None:
+        summary.append(_decorated("Total Tests", str(counts.total), known_icon="STAR"))
+    summary.append(_decorated("Exit Code", str(result.exit_code), known_icon="DESCRIPTION"))
+
+    sections = [{"header": "Execution Summary", "widgets": summary}]
+
+    if counts is not None:
+        sections.append(
+            {
+                "header": "Results",
+                "widgets": [
+                    _decorated("Passed", str(counts.passed), icon_url=ICON_PASSED),
+                    _decorated("Failed", str(counts.failed), icon_url=ICON_FAILED),
+                    _decorated("Skipped", str(counts.skipped), icon_url=ICON_SKIPPED),
+                ],
+            }
+        )
+        kept, extra = _truncate(counts.failed_names, MAX_FAILED_NAMES)
+        if kept:
+            text = "<br>".join(escape(name) for name in kept)
+            if extra:
+                text += "<br><i>...and %d more</i>" % extra
+            sections.append({"header": "Failures", "widgets": [_paragraph(text)]})
+
+    ci_section = _ci_section(meta)
+    if ci_section:
+        sections.append(ci_section)
+
+    payload = _cards_v2(meta, _SUBTITLES[status], sections)
+    payload["cardsV2"][0]["card"]["footer"] = {"text": "chatnotify v%s" % meta.version}
+    return payload
