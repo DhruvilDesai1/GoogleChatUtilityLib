@@ -109,6 +109,51 @@ def run_command(args: argparse.Namespace, command: List[str]) -> int:
     return result.exit_code
 
 
+_MASK = "https://chat.g..."
+
+
+def doctor_command(args: argparse.Namespace) -> int:
+    settings = config.load(flags=_flags_from(args), cwd=os.getcwd())
+    rows = [
+        ("project", settings.project, settings.provenance["project"]),
+        ("environment", settings.environment or "(unset)", settings.provenance["environment"]),
+        (
+            "webhook_url",
+            _MASK if settings.webhook_url else "(not configured)",
+            settings.provenance["webhook_url"],
+        ),
+        ("message_type", settings.message_type, settings.provenance["message_type"]),
+        ("enabled", "yes" if settings.enabled else "no", settings.provenance["enabled"]),
+        ("reports", "auto-detect", settings.provenance["report_patterns"]),
+    ]
+    for name, value, source in rows:
+        print("%-14s %-24s (%s)" % (name, value, source))
+    print("%-14s %s" % ("machine config", config.machine_config_path()))
+    print("%-14s chatnotify %s" % ("version", __version__))
+
+    if not settings.webhook_url:
+        print("-> webhook is not configured; set CHATNOTIFY_WEBHOOK_URL")
+        return 1
+
+    meta = RunMeta(
+        project=settings.project,
+        command="chatnotify doctor",
+        run_id=uuid.uuid4().hex[:12],
+        started_at=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        version=__version__,
+        environment=settings.environment,
+        ci=ci.detect(),
+    )
+    delivered = transport.post(
+        settings.webhook_url,
+        render.start(meta, settings.message_type),
+        thread_key=meta.run_id,
+        quiet=settings.quiet,
+    )
+    print("-> test card sent successfully" if delivered else "-> test card could not be delivered")
+    return 0 if delivered else 1
+
+
 def main(argv: Optional[Sequence[str]] = None) -> int:
     raw = list(sys.argv[1:]) if argv is None else list(argv)
     own, command = split_argv(raw)
