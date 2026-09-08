@@ -1,3 +1,4 @@
+import signal
 import sys
 
 from chatnotify import cli
@@ -110,6 +111,30 @@ def test_only_on_failure_posts_finish_card_when_failing(tmp_path, webhook, monke
     cli.main(["run", "--only-on-failure", "--", PY, "-c", "import sys; sys.exit(1)"])
     assert len(webhook.requests) == 1
     assert webhook.requests[0]["body"]["cardsV2"][0]["card"]["header"]["subtitle"] == "Failed"
+
+
+def test_sigterm_handler_is_installed_around_the_child_and_restored_after(
+    tmp_path, webhook, monkeypatch
+):
+    """A SIGTERM handler must be in place while the child runs, and gone once `run` returns."""
+    from chatnotify.models import RunResult
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr("chatnotify.config.os.environ", base_env(webhook))
+    previous = signal.getsignal(signal.SIGTERM)
+    seen = {}
+
+    def fake_exec(command):
+        seen["during"] = signal.getsignal(signal.SIGTERM)
+        return RunResult(exit_code=0, duration_seconds=0.0)
+
+    monkeypatch.setattr(cli.runner, "exec_command", fake_exec)
+    try:
+        cli.main(["run", "--project", "X", "--", "ignored-command"])
+        assert seen["during"] is not previous
+        assert signal.getsignal(signal.SIGTERM) is previous
+    finally:
+        signal.signal(signal.SIGTERM, previous)
 
 
 def test_version_flag_prints_version(capsys):

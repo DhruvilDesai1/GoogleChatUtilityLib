@@ -2,6 +2,7 @@
 
 import argparse
 import os
+import signal
 import sys
 import time
 import traceback
@@ -15,6 +16,32 @@ from .models import PASSED, RunMeta, resolve_status
 EXIT_USAGE = 2
 
 _child_exit_code = None
+
+
+def _install_sigterm_handler():
+    """Route SIGTERM into the KeyboardInterrupt path. Returns a restore callable.
+
+    Windows does not deliver SIGTERM to a process killed via TerminateProcess, so
+    this is effectively a no-op there; installing it is still harmless.
+    """
+    if not hasattr(signal, "SIGTERM"):
+        return lambda: None
+
+    def _raise_interrupt(signum, frame):
+        raise KeyboardInterrupt()
+
+    try:
+        previous = signal.signal(signal.SIGTERM, _raise_interrupt)
+    except (ValueError, OSError):
+        return lambda: None
+
+    def _restore():
+        try:
+            signal.signal(signal.SIGTERM, previous)
+        except (ValueError, OSError):
+            pass
+
+    return _restore
 
 
 def split_argv(argv: Sequence[str]) -> Tuple[List[str], List[str]]:
@@ -92,10 +119,16 @@ def run_command(args: argparse.Namespace, command: List[str]) -> int:
         )
 
     started_epoch = time.time()
-    result = runner.exec_command(command)
+    restore_sigterm = _install_sigterm_handler()
+    try:
+        result = runner.exec_command(command)
+    finally:
+        restore_sigterm()
     _child_exit_code = result.exit_code
 
-    counts = reports.collect(os.getcwd(), settings.report_patterns, since=started_epoch)
+    counts = reports.collect(
+        os.getcwd(), settings.report_patterns, since=started_epoch, quiet=settings.quiet
+    )
     status = resolve_status(result, counts)
 
     if posting and (not settings.only_on_failure or status != PASSED):

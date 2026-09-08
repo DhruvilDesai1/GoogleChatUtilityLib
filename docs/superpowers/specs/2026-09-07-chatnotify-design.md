@@ -294,7 +294,7 @@ oversized payload cannot silently 400 in production. This is the fix for defect 
 | Report older than run start | Ignored as stale |
 | Payload too large | Truncated in the renderer before send |
 | Command not found | Exit 127, finish card reports it |
-| Ctrl-C / SIGTERM | Forward to child, wait, send card marked **Interrupted**, exit 130 |
+| Ctrl-C / SIGTERM | Forward to child, wait, send card marked **Interrupted**, exit 130. On Windows, `SIGTERM` is not delivered to a process killed via `TerminateProcess`, so a Windows CI job cancellation cannot go through this path; Ctrl-C (`CTRL_C_EVENT`) still does |
 | `chatnotify` itself crashes | Top-level guard: traceback to stderr, exit with the child's code |
 
 The webhook URL is never logged, at any verbosity.
