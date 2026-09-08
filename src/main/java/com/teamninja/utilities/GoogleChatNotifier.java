@@ -70,8 +70,8 @@ public class GoogleChatNotifier {
                                         .statusCode(200);
 
                         System.out.println("Google Chat notification sent successfully.");
-                } catch (Exception e) {
-                        System.err.println("Failed to send Google Chat notification: " + e.getMessage());
+                } catch (Throwable t) {
+                        System.err.println("Failed to send Google Chat notification: " + t);
                 }
         }
 
