@@ -55,10 +55,35 @@ def test_keyboard_interrupt_marks_result_interrupted(monkeypatch):
         def kill(self):
             self.terminated = True
 
-    monkeypatch.setattr(runner.subprocess, "Popen", lambda *a, **k: FakeProcess())
+    fake = FakeProcess()
+    monkeypatch.setattr(runner.subprocess, "Popen", lambda *a, **k: fake)
     result = runner.exec_command(["anything"])
     assert result.interrupted is True
     assert result.exit_code == 130
+    assert fake.terminated is True, "_stop must be called so the child cannot be orphaned"
+
+
+def test_kill_is_attempted_when_terminate_raises(monkeypatch):
+    """A terminate() that fails must not skip the force-kill."""
+    events = []
+
+    class UnterminatableProcess:
+        def wait(self, timeout=None):
+            if not events:
+                raise KeyboardInterrupt()
+            return 137
+
+        def terminate(self):
+            events.append("terminate-failed")
+            raise OSError("cannot terminate")
+
+        def kill(self):
+            events.append("kill")
+
+    monkeypatch.setattr(runner.subprocess, "Popen", lambda *a, **k: UnterminatableProcess())
+    result = runner.exec_command(["anything"])
+    assert "kill" in events, "kill must be attempted when terminate raises"
+    assert result.interrupted is True
 
 
 def test_unkillable_child_is_force_killed(monkeypatch):

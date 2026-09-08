@@ -12,18 +12,26 @@ EXIT_INTERRUPTED = 130
 
 
 def _stop(process, grace_seconds: float) -> None:
+    """Ask the child to stop, then force it if needed. Never raises."""
+    terminated = False
     try:
         process.terminate()
+        terminated = True
     except Exception:
-        return
-    try:
-        process.wait(timeout=grace_seconds)
-    except subprocess.TimeoutExpired:
+        pass
+
+    if terminated:
         try:
-            process.kill()
-            process.wait()
-        except Exception:
+            process.wait(timeout=grace_seconds)
+            return
+        except subprocess.TimeoutExpired:
             pass
+        except Exception:
+            return
+
+    try:
+        process.kill()
+        process.wait()
     except Exception:
         pass
 
