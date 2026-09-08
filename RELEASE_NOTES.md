@@ -8,8 +8,8 @@
 
 ## Description
 **Google Chat Utility Lib** - final release of the Java TestNG library. From `v2.0.0` this
-project ships `chatnotify`, a command-line tool covering TestNG, pytest, Jest, Mocha,
-Playwright, Cypress, and plain scripts with one tool.
+project ships `chatnotify`, a command-line tool covering TestNG, JUnit, pytest, Jest,
+Mocha, Playwright, Cypress, and plain scripts with one tool.
 
 Upgrade to `v1.1.0` if you are on `v1.0.1` or earlier.
 
