@@ -354,6 +354,11 @@ If you are on `v1.0.1` or earlier, upgrade to `v1.1.0` — in earlier versions a
 unreachable webhook throws an `AssertionError` that escapes the listener and aborts
 the whole test suite.
 
+> **JitPack serves only the `1.x` tags.** From `v2.0.0` this repository is a Python
+> project with no `pom.xml`, so asking JitPack for `v2.0.0` fails with
+> *"No build file found"* — that is expected, not a broken release. Pin `v1.1.0`
+> explicitly rather than using a floating version, and install `v2.0.0` with `pip`.
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
