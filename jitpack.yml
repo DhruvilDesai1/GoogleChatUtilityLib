@@ -1,5 +1,0 @@
-jdk:
-  - openjdk21
-install:
-  - sdk install maven 3.9.9
-  - mvn clean install -DskipTests

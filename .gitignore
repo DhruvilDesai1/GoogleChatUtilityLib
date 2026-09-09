@@ -13,3 +13,14 @@ target/
 # OS
 .DS_Store
 Thumbs.db
+
+.superpowers/
+
+__pycache__/
+*.pyc
+.pytest_cache/
+build/
+dist/
+*.egg-info/
+.env
+*.pyz

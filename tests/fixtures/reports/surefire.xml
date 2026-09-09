@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.teamninja.LoginTest" tests="3" errors="1" skipped="0" failures="0" time="2.11">
+  <testcase name="validLogin" classname="com.teamninja.LoginTest" time="1.02"/>
+  <testcase name="invalidLogin" classname="com.teamninja.LoginTest" time="0.55"/>
+  <testcase name="expiredSession" classname="com.teamninja.LoginTest" time="0.54">
+    <error message="NullPointerException" type="java.lang.NullPointerException">stack</error>
+  </testcase>
+</testsuite>
