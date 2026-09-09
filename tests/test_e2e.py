@@ -22,6 +22,28 @@ def test_skipped():
 """
 
 
+def clean_env():
+    """A child environment with every chatnotify setting stripped.
+
+    These tests spawn `python -m chatnotify` as a subprocess, which inherits the
+    developer's environment. Anyone working on this tool is likely to have
+    CHATNOTIFY_DISABLED=1 set in their shell, since that is the documented way to
+    silence it locally - and that would make these tests fail for reasons that have
+    nothing to do with the code. Scrub the whole namespace, including the legacy
+    aliases, so each test declares exactly the configuration it depends on.
+    """
+    env = {
+        key: value
+        for key, value in os.environ.items()
+        if not key.startswith("CHATNOTIFY_")
+        and key not in ("GOOGLE_CHAT_WEBHOOK_URL", "PROJECT_NAME", "ENVIRONMENT", "MESSAGE_TYPE")
+    }
+    # CI is set on GitHub Actions and would enable notifications implicitly; tests
+    # that want them on set CHATNOTIFY_ENABLED themselves.
+    env.pop("CI", None)
+    return env
+
+
 def run_cli(cwd, env, *args):
     command = [sys.executable, "-m", "chatnotify"] + list(args)
     return subprocess.run(command, cwd=cwd, env=env, capture_output=True, text=True)
@@ -29,7 +51,7 @@ def run_cli(cwd, env, *args):
 
 def test_real_pytest_run_produces_accurate_cards(tmp_path, webhook):
     (tmp_path / "test_sample.py").write_text(SUITE, encoding="utf-8")
-    env = dict(os.environ)
+    env = clean_env()
     env["CHATNOTIFY_WEBHOOK_URL"] = webhook.url
     env["CHATNOTIFY_ENABLED"] = "1"
     env["CHATNOTIFY_PROJECT"] = "E2E Suite"
@@ -75,7 +97,7 @@ def test_real_pytest_run_produces_accurate_cards(tmp_path, webhook):
 
 def test_plain_script_reports_exit_code_only(tmp_path, webhook):
     (tmp_path / "job.py").write_text("import sys; sys.exit(0)", encoding="utf-8")
-    env = dict(os.environ)
+    env = clean_env()
     env["CHATNOTIFY_WEBHOOK_URL"] = webhook.url
     env["CHATNOTIFY_ENABLED"] = "1"
 
@@ -97,7 +119,7 @@ def test_stale_report_is_not_reported_as_current(tmp_path, webhook):
     os.utime(str(stale), (0, 0))
     (tmp_path / "job.py").write_text("pass", encoding="utf-8")
 
-    env = dict(os.environ)
+    env = clean_env()
     env["CHATNOTIFY_WEBHOOK_URL"] = webhook.url
     env["CHATNOTIFY_ENABLED"] = "1"
 
@@ -110,7 +132,7 @@ def test_stale_report_is_not_reported_as_current(tmp_path, webhook):
 
 def test_child_output_is_not_swallowed(tmp_path):
     (tmp_path / "loud.py").write_text("print('CHILD SPEAKING')", encoding="utf-8")
-    env = dict(os.environ)
+    env = clean_env()
     env["CHATNOTIFY_DISABLED"] = "1"
     completed = run_cli(str(tmp_path), env, "run", "--", sys.executable, "loud.py")
     assert "CHILD SPEAKING" in completed.stdout
