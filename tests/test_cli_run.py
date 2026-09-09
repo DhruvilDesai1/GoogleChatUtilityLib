@@ -1,7 +1,7 @@
 import signal
 import sys
 
-from chatnotify import cli
+from chatnotify import __version__, cli
 
 PY = sys.executable
 
@@ -305,7 +305,7 @@ def test_version_flag_prints_version(capsys):
         cli.main(["--version"])
     except SystemExit:
         pass
-    assert "2.0.0" in capsys.readouterr().out
+    assert __version__ in capsys.readouterr().out
 
 
 def test_entrypoint_exits_two_when_crash_precedes_child(monkeypatch, capsys):

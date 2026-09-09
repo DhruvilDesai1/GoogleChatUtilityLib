@@ -71,9 +71,20 @@ def test_failure_list_is_truncated_at_ten():
     assert "and 15 more" in paragraph
 
 
-def test_footer_carries_the_version():
-    payload = render.finish(meta(), RunResult(exit_code=0, duration_seconds=1.0), None)
-    assert payload["cardsV2"][0]["card"]["footer"]["text"] == "chatnotify v2.0.0"
+def test_version_is_stamped_as_a_trailing_widget_not_a_card_footer():
+    """Cards v2 has no `footer` field - Chat rejects the whole message if one is sent.
+
+    v2.0.0 set `card["footer"]`, so every finish card was rejected with
+    'Unknown name "footer" ... Cannot find field'. The version still has to appear,
+    so it is a trailing textParagraph widget instead. See tests/test_card_schema.py
+    for the guard that makes this class of mistake impossible to ship again.
+    """
+    card = render.finish(meta(), RunResult(exit_code=0, duration_seconds=1.0), None)["cardsV2"][
+        0
+    ]["card"]
+    assert "footer" not in card
+    last_widget = card["sections"][-1]["widgets"][-1]
+    assert "chatnotify v2.0.0" in last_widget["textParagraph"]["text"]
 
 
 def test_build_button_present_when_ci_detected():

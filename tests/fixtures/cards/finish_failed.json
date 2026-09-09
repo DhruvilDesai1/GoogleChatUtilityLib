@@ -13,21 +13,27 @@
             "widgets": [
               {
                 "decoratedText": {
-                  "startIcon": {"knownIcon": "CLOCK"},
+                  "startIcon": {
+                    "knownIcon": "CLOCK"
+                  },
                   "topLabel": "Duration",
                   "text": "3m 12s"
                 }
               },
               {
                 "decoratedText": {
-                  "startIcon": {"knownIcon": "STAR"},
+                  "startIcon": {
+                    "knownIcon": "STAR"
+                  },
                   "topLabel": "Total Tests",
                   "text": "10"
                 }
               },
               {
                 "decoratedText": {
-                  "startIcon": {"knownIcon": "DESCRIPTION"},
+                  "startIcon": {
+                    "knownIcon": "DESCRIPTION"
+                  },
                   "topLabel": "Exit Code",
                   "text": "1"
                 }
@@ -39,21 +45,27 @@
             "widgets": [
               {
                 "decoratedText": {
-                  "startIcon": {"iconUrl": "https://fonts.gstatic.com/s/e/notoemoji/15.0/2705/512.png"},
+                  "startIcon": {
+                    "iconUrl": "https://fonts.gstatic.com/s/e/notoemoji/15.0/2705/512.png"
+                  },
                   "topLabel": "Passed",
                   "text": "7"
                 }
               },
               {
                 "decoratedText": {
-                  "startIcon": {"iconUrl": "https://fonts.gstatic.com/s/e/notoemoji/15.0/274c/512.png"},
+                  "startIcon": {
+                    "iconUrl": "https://fonts.gstatic.com/s/e/notoemoji/15.0/274c/512.png"
+                  },
                   "topLabel": "Failed",
                   "text": "2"
                 }
               },
               {
                 "decoratedText": {
-                  "startIcon": {"iconUrl": "https://fonts.gstatic.com/s/e/notoemoji/15.0/26a0/512.png"},
+                  "startIcon": {
+                    "iconUrl": "https://fonts.gstatic.com/s/e/notoemoji/15.0/26a0/512.png"
+                  },
                   "topLabel": "Skipped",
                   "text": "1"
                 }
@@ -69,11 +81,17 @@
                 }
               }
             ]
+          },
+          {
+            "widgets": [
+              {
+                "textParagraph": {
+                  "text": "<font color=\"#888888\">chatnotify v2.0.0</font>"
+                }
+              }
+            ]
           }
-        ],
-        "footer": {
-          "text": "chatnotify v2.0.0"
-        }
+        ]
       }
     }
   ]

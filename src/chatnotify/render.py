@@ -143,6 +143,15 @@ def _paragraph(text: str) -> dict:
     return {"textParagraph": {"text": text}}
 
 
+def _version_note(version: str) -> str:
+    """The version stamp shown at the bottom of the finish card.
+
+    It exists so a card of unexpected shape is traceable to the version that
+    produced it, which matters when a team is spread across versions.
+    """
+    return '<font color="#888888">chatnotify v%s</font>' % _safe(version)
+
+
 def _button(label: str, url: str) -> dict:
     return {"buttonList": {"buttons": [{"text": label, "onClick": {"openLink": {"url": url}}}]}}
 
@@ -310,9 +319,15 @@ def finish(
         if ci_section:
             sections.append(ci_section)
 
-        payload = _cards_v2(meta, _SUBTITLES[status], sections)
-        payload["cardsV2"][0]["card"]["footer"] = {"text": "chatnotify v%s" % meta.version}
-        return payload
+        # The version is a trailing widget, not a card `footer`. Cards v2 has no
+        # `footer` field - Chat rejects the whole message with
+        #   Invalid JSON payload received. Unknown name "footer"
+        #     at 'message.cards_v2[0].card': Cannot find field.
+        # The nearest real field, `fixedFooter`, is a CardFixedFooter and holds only
+        # primaryButton/secondaryButton, so a version string cannot live there at all.
+        sections.append({"widgets": [_paragraph(_version_note(meta.version))]})
+
+        return _cards_v2(meta, _SUBTITLES[status], sections)
 
     payload = build(True)
     if _payload_size(payload) > MAX_PAYLOAD_BYTES:

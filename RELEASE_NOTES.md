@@ -1,6 +1,57 @@
 # Release Details
 
 ## Tag version
+`v2.0.1`
+
+## Release Title
+`v2.0.1 - Fix: finish cards were rejected by Google Chat`
+
+## Description
+**Upgrade immediately if you installed `v2.0.0`.** In `v2.0.0` no finish card ever
+reached a Google Chat space in the default `CARD` mode.
+
+### Fixed
+- **Finish cards were rejected outright.** `render.finish` set a `footer` field on the
+  card, but Cards v2 defines no such field, so Chat rejected the entire message:
+
+      Invalid JSON payload received. Unknown name "footer"
+        at 'message.cards_v2[0].card': Cannot find field.
+
+  The nearest real field, `fixedFooter`, is a `CardFixedFooter` and holds only
+  `primaryButton`/`secondaryButton`, so a version string cannot live there. The version
+  stamp is now a trailing `textParagraph` widget, which Chat accepts. Start cards were
+  never affected - `footer` was set on the finish path only.
+
+### Why the tests did not catch it
+Two reasons, both now addressed:
+
+1. The suite posts to a local stub server, which accepts any JSON. A stub validates
+   transport, never schema, so it can never discover that the real API rejects a field
+   name.
+2. The golden fixture had been generated from the same buggy code, so the oracle
+   encoded the bug and the suite actively locked it in.
+
+`tests/test_card_schema.py` now walks every emitted payload and asserts each key is a
+field the Cards v2 API actually defines - at the message, card, header, section, widget,
+icon, button and link levels - including the oversized/truncated rebuild path. One test
+re-adds the exact `footer` key `v2.0.0` sent and asserts the guard rejects it.
+
+### Workaround for anyone stuck on v2.0.0
+`--message-type TEXT`, or `CHATNOTIFY_MESSAGE_TYPE=TEXT`, bypasses the card path
+entirely and delivers correctly.
+
+### Installation
+```
+pip install "git+https://github.com/DhruvilDesai1/GoogleChatUtilityLib@v2.0.1"
+```
+
+---
+
+# Previous release
+
+# Release Details
+
+## Tag version
 `v2.0.0`
 
 ## Release Title

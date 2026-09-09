@@ -36,7 +36,7 @@ thread when it ends:
 │  tests.test_cart.test_remove_item        │
 │                                          │
 │  [ View build ]                          │
-│  chatnotify v2.0.0                       │
+│  chatnotify v2.0.1                       │
 └──────────────────────────────────────────┘
 ```
 
@@ -56,10 +56,14 @@ stderr and does not block your command.
 ## Install
 
 ```bash
-pip install "git+https://github.com/DhruvilDesai1/GoogleChatUtilityLib@v2.0.0"
+pip install "git+https://github.com/DhruvilDesai1/GoogleChatUtilityLib@v2.0.1"
 ```
 
 No pip on the runner? See [Single-file install](#single-file-install-no-pip).
+
+> **Do not use `v2.0.0`.** Google Chat rejected every finish card in that
+> release because of an invalid field on the card. `v2.0.1` fixes it. If you already
+> installed `v2.0.0`, reinstall at `v2.0.1`.
 
 ## Step 1: get a webhook URL
 

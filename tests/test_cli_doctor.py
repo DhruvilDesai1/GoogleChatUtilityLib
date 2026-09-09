@@ -1,4 +1,4 @@
-from chatnotify import cli
+from chatnotify import __version__, cli
 
 
 def test_doctor_reports_provenance_for_each_value(tmp_path, webhook, monkeypatch, capsys):
@@ -132,5 +132,5 @@ def test_doctor_prints_version_and_machine_config_path(tmp_path, monkeypatch, ca
     monkeypatch.setattr("chatnotify.config.os.environ", {})
     cli.main(["doctor"])
     out = capsys.readouterr().out
-    assert "2.0.0" in out
+    assert __version__ in out  # not a literal: a version bump must not need a test edit
     assert "config.ini" in out
