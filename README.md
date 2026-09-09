@@ -40,6 +40,9 @@ thread when it ends:
 └──────────────────────────────────────────┘
 ```
 
+In CI the card also carries the branch, the commit, who triggered the run, and a
+**View build** link back to the job.
+
 `chatnotify run` exits with exactly the code your command exited with, and streams
 its output through unchanged. An unreachable or misconfigured webhook is logged to
 stderr and does not block your command.
@@ -329,7 +332,17 @@ Versions `1.0.0` through `1.1.0` of this repository were `GoogleChatUtilityLib`,
 TestNG-only Java listener. `chatnotify` supersedes it, but those versions remain
 buildable from their tags via JitPack:
 
+JitPack artifacts are not on Maven Central, so you need the repository as well as the
+dependency:
+
 ```xml
+<repositories>
+    <repository>
+        <id>jitpack.io</id>
+        <url>https://jitpack.io</url>
+    </repository>
+</repositories>
+
 <dependency>
     <groupId>com.github.DhruvilDesai1</groupId>
     <artifactId>GoogleChatUtilityLib</artifactId>
