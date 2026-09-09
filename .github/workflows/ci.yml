@@ -90,16 +90,28 @@ jobs:
       || github.event_name == 'workflow_dispatch'
     needs: test
     runs-on: ubuntu-latest
+    env:
+      TAG: ${{ github.event.release.tag_name || github.event.inputs.tag }}
     steps:
+      # The harness is CI infrastructure and lives on the default branch, NOT at the
+      # tag - an older tag predates it. The package under test comes from the tag
+      # instead, installed the way a user installs it. Checking out the tag here is
+      # what broke the first run of this job.
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.release.tag_name || github.event.inputs.tag }}
+          ref: ${{ github.event.repository.default_branch }}
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - run: pip install -e .
+      - name: Install the released version from its tag
+        run: pip install "git+https://github.com/${{ github.repository }}@$TAG"
+      - name: Confirm the installed version matches the tag
+        run: |
+          expected="${TAG#v}"
+          actual="$(python -c 'import chatnotify; print(chatnotify.__version__)')"
+          echo "tag=$TAG  expected=$expected  installed=$actual"
+          test "$actual" = "$expected"
       - name: Require Google Chat to accept every card shape
         env:
           WEBHOOK: ${{ secrets.CHATNOTIFY_SMOKE_WEBHOOK }}
-          TAG: ${{ github.event.release.tag_name || github.event.inputs.tag }}
         run: python .github/scripts/smoke_chat.py
