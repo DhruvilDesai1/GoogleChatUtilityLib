@@ -61,9 +61,10 @@ pip install "git+https://github.com/DhruvilDesai1/GoogleChatUtilityLib@v2.0.1"
 
 No pip on the runner? See [Single-file install](#single-file-install-no-pip).
 
-> **Do not use `v2.0.0`.** Google Chat rejected every finish card in that
-> release because of an invalid field on the card. `v2.0.1` fixes it. If you already
-> installed `v2.0.0`, reinstall at `v2.0.1`.
+> **`v2.0.0` has been withdrawn.** Google Chat rejected every finish card in that
+> release because of an invalid field on the card, so its tag and release were removed
+> and it can no longer be installed. `v2.0.1` fixes it. If you installed `v2.0.0` before
+> it was withdrawn, reinstall at `v2.0.1`.
 
 ## Step 1: get a webhook URL
 
@@ -361,7 +362,7 @@ the whole test suite.
 > **JitPack serves only the `1.x` tags.** From `v2.0.0` this repository is a Python
 > project with no `pom.xml`, so asking JitPack for `v2.0.0` fails with
 > *"No build file found"* — that is expected, not a broken release. Pin `v1.1.0`
-> explicitly rather than using a floating version, and install `v2.0.0` with `pip`.
+> explicitly rather than using a floating version, and install the `2.x` line with `pip`.
 
 ## License
 
