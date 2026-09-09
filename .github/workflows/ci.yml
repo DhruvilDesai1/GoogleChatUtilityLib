@@ -80,3 +80,26 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh release upload "$TAG" chatnotify.pyz --clobber
+
+  # The only check that can catch a payload the live API rejects. The test suite
+  # posts to a stub that accepts any JSON, so it validates transport and never
+  # schema - which is how v2.0.0 shipped a card field Chat refuses.
+  smoke-chat:
+    if: >
+      (github.event_name == 'release' && github.event.action == 'published')
+      || github.event_name == 'workflow_dispatch'
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name || github.event.inputs.tag }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -e .
+      - name: Require Google Chat to accept every card shape
+        env:
+          WEBHOOK: ${{ secrets.CHATNOTIFY_SMOKE_WEBHOOK }}
+          TAG: ${{ github.event.release.tag_name || github.event.inputs.tag }}
+        run: python .github/scripts/smoke_chat.py
