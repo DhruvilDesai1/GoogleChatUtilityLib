@@ -1,13 +1,42 @@
 [build-system]
-requires = ["setuptools>=61"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "chatnotify"
 version = "2.0.0"
 description = "Post Google Chat notifications when any test suite or script starts and finishes"
-requires-python = ">=3.8"
+readme = "README.md"
+requires-python = ">=3.9"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Dhruvil Desai" }]
+keywords = [
+    "google-chat",
+    "notifications",
+    "testng",
+    "pytest",
+    "junit",
+    "ci",
+    "test-reporting",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Testing",
+]
 dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/DhruvilDesai1/GoogleChatUtilityLib"
+Repository = "https://github.com/DhruvilDesai1/GoogleChatUtilityLib"
+Issues = "https://github.com/DhruvilDesai1/GoogleChatUtilityLib/issues"
 
 [project.optional-dependencies]
 dev = ["pytest>=7"]

@@ -10,7 +10,7 @@
 
 **Spec:** `docs/superpowers/specs/2026-09-07-chatnotify-design.md`
 
-**Project root:** `C:\Users\Adit\IdeaProjects\GoogleChatUtilityLib` — this repository. The retired Java library is removed in Task 1 Step 1, *after* the v1.1.0 patch plan has tagged it, so tags `v1.0.1` and `v1.1.0` remain buildable by JitPack forever. All paths and commands are relative to this root.
+**Project root:** the repository root. The retired Java library is removed in Task 1 Step 1, *after* the v1.1.0 patch plan has tagged it, so tags `v1.0.1` and `v1.1.0` remain buildable by JitPack forever. All paths and commands are relative to this root.
 
 ## Global Constraints
 

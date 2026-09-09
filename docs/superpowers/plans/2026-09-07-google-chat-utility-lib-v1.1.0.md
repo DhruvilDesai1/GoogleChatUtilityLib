@@ -10,7 +10,7 @@
 
 **Spec:** `docs/superpowers/specs/2026-09-07-chatnotify-design.md` section 10.
 
-**Project root:** `C:\Users\Adit\IdeaProjects\GoogleChatUtilityLib` — the current repository.
+**Project root:** the repository root.
 
 ## Global Constraints
 
