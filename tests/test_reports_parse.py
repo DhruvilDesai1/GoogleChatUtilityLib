@@ -68,3 +68,49 @@ def test_case_without_name_attribute_falls_back_to_placeholder():
     counts = reports.parse_files([fixture("lying_attributes.xml")])
     assert counts.failed_names == ("retry.Suite.flakyFailed",)
     assert counts.skipped == 1
+
+
+# --- unparseable reports must not disappear silently ---------------------------
+
+
+def test_unparseable_report_is_announced_on_stderr(capsys):
+    counts = reports.parse_files([fixture("malformed.xml"), fixture("surefire.xml")])
+    assert counts.total == 3
+    err = capsys.readouterr().err
+    assert "1 report file(s) could not be parsed" in err
+
+
+def test_truncated_report_is_announced_on_stderr(tmp_path, capsys):
+    """A runner killed mid-write leaves a truncated file; counts must not go quiet."""
+    path = tmp_path / "truncated.xml"
+    path.write_text('<testsuite name="s"><testcase classname="c" name="t"', encoding="utf-8")
+    assert reports.parse_files([str(path)]) is None
+    assert "1 report file(s) could not be parsed" in capsys.readouterr().err
+
+
+def test_null_byte_report_is_announced_on_stderr(tmp_path, capsys):
+    path = tmp_path / "nul.xml"
+    path.write_bytes(b'<testsuite name="s">\x00<testcase name="t"/></testsuite>')
+    assert reports.parse_files([str(path)]) is None
+    assert "could not be parsed" in capsys.readouterr().err
+
+
+def test_missing_report_is_announced_on_stderr(capsys):
+    assert reports.parse_files([fixture("does-not-exist.xml")]) is None
+    assert "could not be parsed" in capsys.readouterr().err
+
+
+def test_parse_files_quiet_suppresses_the_warning(capsys):
+    assert reports.parse_files([fixture("malformed.xml")], quiet=True) is None
+    assert capsys.readouterr().err == ""
+
+
+def test_parse_files_quiet_is_accepted_positionally(capsys):
+    """`paths` stays the first parameter; quiet is appended after it."""
+    assert reports.parse_files([fixture("malformed.xml")], True) is None
+    assert capsys.readouterr().err == ""
+
+
+def test_parseable_reports_produce_no_warning(capsys):
+    reports.parse_files([fixture("pytest.xml")])
+    assert capsys.readouterr().err == ""

@@ -47,7 +47,8 @@ def _clean(value) -> Optional[str]:
 
 
 def _truthy(value) -> bool:
-    return _clean(value) is not None and str(value).strip().lower() in _TRUTHY
+    cleaned = _clean(value)
+    return cleaned is not None and cleaned.lower() in _TRUTHY
 
 
 def _env_key_for(name: str) -> str:
@@ -73,11 +74,11 @@ def machine_config_path(env: Optional[Mapping[str, str]] = None) -> str:
 
 
 def _read_ini(path: str) -> configparser.ConfigParser:
-    parser = configparser.ConfigParser()
+    parser = configparser.ConfigParser(interpolation=None)
     try:
-        parser.read(path, encoding="utf-8")
+        parser.read(path, encoding="utf-8-sig")
     except (configparser.Error, OSError, UnicodeDecodeError):
-        return configparser.ConfigParser()
+        return configparser.ConfigParser(interpolation=None)
     return parser
 
 
@@ -93,7 +94,7 @@ def _ini_get(parser: configparser.ConfigParser, section: str, option: str) -> Op
 def _read_dotenv(path: str) -> Dict[str, str]:
     values = {}
     try:
-        with open(path, "r", encoding="utf-8") as handle:
+        with open(path, "r", encoding="utf-8-sig") as handle:
             for line in handle:
                 stripped = line.strip()
                 if not stripped or stripped.startswith("#") or "=" not in stripped:
@@ -107,11 +108,15 @@ def _read_dotenv(path: str) -> Dict[str, str]:
     return values
 
 
-def _resolve_enabled(env: Mapping[str, str]) -> Tuple[bool, str]:
+def _resolve_enabled(env: Mapping[str, str], dotenv: Mapping[str, str]) -> Tuple[bool, str]:
     if _truthy(env.get("CHATNOTIFY_DISABLED")):
         return False, "env: CHATNOTIFY_DISABLED"
+    if _truthy(dotenv.get("CHATNOTIFY_DISABLED")):
+        return False, ".env: CHATNOTIFY_DISABLED"
     if _truthy(env.get("CHATNOTIFY_ENABLED")):
         return True, "env: CHATNOTIFY_ENABLED"
+    if _truthy(dotenv.get("CHATNOTIFY_ENABLED")):
+        return True, ".env: CHATNOTIFY_ENABLED"
     if _clean(env.get("CI")):
         return True, "CI detected"
     return False, "default (local)"
@@ -185,7 +190,7 @@ def load(
         type_source = "default (invalid value %r from %s)" % (raw_type, type_source)
     provenance["message_type"] = type_source
 
-    enabled, provenance["enabled"] = _resolve_enabled(env)
+    enabled, provenance["enabled"] = _resolve_enabled(env, dotenv)
 
     raw_report = _clean(flags.get("report"))
     if raw_report:

@@ -42,6 +42,7 @@ jobs:
 
   release-pyz:
     if: github.event_name == 'release' && github.event.action == 'published'
+    needs: test
     runs-on: ubuntu-latest
     permissions:
       contents: write

@@ -108,3 +108,98 @@ def test_duration_formatting():
     assert render.format_duration(65.0) == "1m 5s"
     assert render.format_duration(192.0) == "3m 12s"
     assert render.format_duration(3725.0) == "1h 2m 5s"
+
+
+# --- Fix 1: size limits -----------------------------------------------------
+
+
+def test_overlong_failure_name_is_truncated():
+    huge_name = "x" * 10_000
+    counts = TestCounts(total=1, passed=0, failed=1, skipped=0, failed_names=(huge_name,))
+    payload = render.finish(meta(), RunResult(exit_code=1, duration_seconds=1.0), counts)
+    rendered = json.dumps(payload)
+    assert huge_name not in rendered
+    assert len(rendered) < 5000
+    assert "..." in rendered
+
+    text_payload = render.finish(
+        meta(), RunResult(exit_code=1, duration_seconds=1.0), counts, message_type=TEXT
+    )
+    assert huge_name not in text_payload["text"]
+    assert "..." in text_payload["text"]
+
+
+def test_payload_exceeding_byte_cap_drops_optional_detail(monkeypatch):
+    names = tuple("test_failure_number_%03d" % index for index in range(10))
+    counts = TestCounts(total=10, passed=0, failed=10, skipped=0, failed_names=names)
+    result = RunResult(exit_code=1, duration_seconds=1.0)
+
+    # Derive the cap from the real payload size rather than hardcoding a byte count.
+    # A hardcoded threshold silently stops engaging whenever field sizes or
+    # sanitisation change, and the test then passes without exercising the backstop.
+    monkeypatch.setattr(render, "MAX_PAYLOAD_BYTES", 10 ** 9)
+    full_card = len(json.dumps(render.finish(meta(), result, counts)).encode("utf-8"))
+    full_text = len(
+        json.dumps(render.finish(meta(), result, counts, message_type=TEXT)).encode("utf-8")
+    )
+    monkeypatch.setattr(render, "MAX_PAYLOAD_BYTES", min(full_card, full_text) - 1)
+
+    card_payload = render.finish(meta(), result, counts)
+    card_rendered = json.dumps(card_payload)
+    for name in names:
+        assert name not in card_rendered
+    assert "omitted" in card_rendered.lower()
+
+    text_payload = render.finish(meta(), result, counts, message_type=TEXT)
+    for name in names:
+        assert name not in text_payload["text"]
+    assert "omitted" in text_payload["text"].lower()
+
+
+# --- Fix 2: TEXT mode link/header injection ---------------------------------
+
+
+def test_text_mode_neutralizes_link_injection_in_failure_name():
+    hostile = "<https://evil.example/pwn|Click to fix your build>"
+    counts = TestCounts(total=1, passed=0, failed=1, skipped=0, failed_names=(hostile,))
+    payload = render.finish(
+        meta(), RunResult(exit_code=1, duration_seconds=1.0), counts, message_type=TEXT
+    )
+    text = payload["text"]
+    assert "<https://evil.example/pwn|" not in text
+    assert "evil.example" in text
+
+
+def test_text_mode_project_newline_cannot_forge_header():
+    hostile_meta = RunMeta(
+        project="Real Project\n*Forged System Message*",
+        command="pytest",
+        run_id="r",
+        started_at="2026-09-07 10:04:11",
+        version="2.0.0",
+    )
+    payload = render.finish(
+        hostile_meta, RunResult(exit_code=0, duration_seconds=1.0), None, message_type=TEXT
+    )
+    lines = payload["text"].split("\n")
+    # a raw newline in project must not split the header into two lines - the
+    # very next line must be the real Duration line, not a forged one.
+    assert lines[1] == "Duration: 1s"
+    assert "Forged System Message" not in lines[1]
+
+
+# --- Fix 3: control characters / bidi override ------------------------------
+
+
+def test_control_chars_and_bidi_override_stripped_from_card_and_text():
+    hostile_name = "tests.test_bell\x07‮reversed"
+    counts = TestCounts(total=1, passed=0, failed=1, skipped=0, failed_names=(hostile_name,))
+    result = RunResult(exit_code=1, duration_seconds=1.0)
+
+    card_rendered = json.dumps(render.finish(meta(), result, counts))
+    assert "‮" not in card_rendered
+    assert "\x07" not in card_rendered
+
+    text_payload = render.finish(meta(), result, counts, message_type=TEXT)
+    assert "‮" not in text_payload["text"]
+    assert "\x07" not in text_payload["text"]

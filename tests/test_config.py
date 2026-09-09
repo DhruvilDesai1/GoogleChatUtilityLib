@@ -210,3 +210,97 @@ def test_env_key_for_maps_all_punctuation_and_non_ascii():
     assert config._env_key_for("web:hooks") == "CHATNOTIFY_WEBHOOK_WEB_HOOKS"
     assert config._env_key_for("equipe1") == "CHATNOTIFY_WEBHOOK_EQUIPE1"
     assert config._env_key_for("\u00e9quipe") == "CHATNOTIFY_WEBHOOK__QUIPE"
+
+
+# --- Fix 1: a UTF-8 BOM must not void file-based config ---------------------
+
+
+def test_bom_prefixed_ini_is_read_correctly(repo):
+    write(
+        os.path.join(repo, ".chatnotify.ini"),
+        "\ufeff[chatnotify]\nproject = FromIni\nmessage_type = TEXT\n",
+    )
+    result = config.load(cwd=repo, env={})
+    assert result.project == "FromIni"
+    assert result.provenance["project"] == ".chatnotify.ini"
+    assert result.message_type == "TEXT"
+
+
+def test_bom_prefixed_dotenv_is_read_correctly(repo):
+    write(os.path.join(repo, ".env"), "\ufeffCHATNOTIFY_PROJECT=FromDotenv\n")
+    result = config.load(cwd=repo, env={})
+    assert result.project == "FromDotenv"
+    assert result.provenance["project"] == ".env"
+
+
+# --- Fix 2: a literal '%' in an ini value must survive, not be swallowed ----
+
+
+def test_percent_in_ini_project_value_is_preserved(repo):
+    write(os.path.join(repo, ".chatnotify.ini"), "[chatnotify]\nproject = Coverage 100% Suite\n")
+    result = config.load(cwd=repo, env={})
+    assert result.project == "Coverage 100% Suite"
+    assert result.provenance["project"] == ".chatnotify.ini"
+
+
+def test_percent_encoded_webhook_url_in_webhooks_section_is_preserved(tmp_path, repo):
+    machine = tmp_path / "cfg" / "chatnotify" / "config.ini"
+    write(str(machine), "[webhooks]\nqa-team = https://chat.example/qa?token=abc%3D%3D\n")
+    write(os.path.join(repo, ".chatnotify.ini"), "[chatnotify]\nwebhook = qa-team\n")
+    result = config.load(
+        cwd=repo, env={"APPDATA": str(tmp_path / "cfg"), "XDG_CONFIG_HOME": str(tmp_path / "cfg")}
+    )
+    assert result.webhook_url == "https://chat.example/qa?token=abc%3D%3D"
+
+
+# --- Fix 3: .env must be able to set enablement, at the right rung ---------
+
+
+def test_dotenv_can_enable_locally(repo):
+    write(os.path.join(repo, ".env"), "CHATNOTIFY_ENABLED=1\n")
+    result = config.load(cwd=repo, env={})
+    assert result.enabled is True
+    assert result.provenance["enabled"] == ".env: CHATNOTIFY_ENABLED"
+
+
+def test_dotenv_can_disable_under_ci(repo):
+    write(os.path.join(repo, ".env"), "CHATNOTIFY_DISABLED=1\n")
+    result = config.load(cwd=repo, env={"CI": "true"})
+    assert result.enabled is False
+    assert result.provenance["enabled"] == ".env: CHATNOTIFY_DISABLED"
+
+
+def test_real_env_disabled_beats_dotenv_enabled(repo):
+    write(os.path.join(repo, ".env"), "CHATNOTIFY_ENABLED=1\n")
+    result = config.load(cwd=repo, env={"CHATNOTIFY_DISABLED": "1"})
+    assert result.enabled is False
+    assert result.provenance["enabled"] == "env: CHATNOTIFY_DISABLED"
+
+
+def test_dotenv_disabled_beats_real_env_enabled(repo):
+    write(os.path.join(repo, ".env"), "CHATNOTIFY_DISABLED=1\n")
+    result = config.load(cwd=repo, env={"CHATNOTIFY_ENABLED": "1"})
+    assert result.enabled is False
+    assert result.provenance["enabled"] == ".env: CHATNOTIFY_DISABLED"
+
+
+def test_dotenv_enabled_beats_ci_detection(repo):
+    write(os.path.join(repo, ".env"), "CHATNOTIFY_ENABLED=1\n")
+    result = config.load(cwd=repo, env={"CI": "true"})
+    assert result.enabled is True
+    assert result.provenance["enabled"] == ".env: CHATNOTIFY_ENABLED"
+
+
+# --- Fix 4: _truthy must strip quotes the same way _clean does -------------
+
+
+def test_truthy_strips_quotes():
+    assert config._truthy('"1"') is True
+    assert config._truthy("'true'") is True
+    assert config._truthy('"nope"') is False
+
+
+def test_quoted_disabled_value_in_real_env_is_truthy(repo):
+    result = config.load(cwd=repo, env={"CI": "true", "CHATNOTIFY_DISABLED": '"1"'})
+    assert result.enabled is False
+    assert result.provenance["enabled"] == "env: CHATNOTIFY_DISABLED"
