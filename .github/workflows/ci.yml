@@ -6,6 +6,14 @@ on:
   pull_request:
   release:
     types: [published]
+  # Recovery path: attach chatnotify.pyz to a tag whose release job failed, without
+  # having to delete and re-publish the release (re-running a failed run would reuse
+  # the old workflow file, bug included).
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag to build and attach chatnotify.pyz to (e.g. v2.0.1)"
+        required: true
 
 jobs:
   test:
@@ -41,24 +49,34 @@ jobs:
           path: chatnotify.pyz
 
   release-pyz:
-    if: github.event_name == 'release' && github.event.action == 'published'
+    if: >
+      (github.event_name == 'release' && github.event.action == 'published')
+      || github.event_name == 'workflow_dispatch'
     needs: test
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    env:
+      TAG: ${{ github.event.release.tag_name || github.event.inputs.tag }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name || github.event.inputs.tag }}
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
       - name: Build single-file zipapp
         run: python -m zipapp src -m "chatnotify.cli:entrypoint" -p "/usr/bin/env python3" -o chatnotify.pyz
-      - name: Verify zipapp runs
+      - name: Verify the artifact reports the version the tag claims
+        # Compared against the tag, never a literal: a hardcoded expected version
+        # silently fails the release on the next bump, which is exactly what happened
+        # to v2.0.1. This also catches a tag pointing at the wrong commit.
         run: |
-          version="$(python chatnotify.pyz --version)"
-          echo "chatnotify.pyz --version -> $version"
-          test "$version" = "2.0.0"
+          expected="${TAG#v}"
+          actual="$(python chatnotify.pyz --version)"
+          echo "tag=$TAG  expected=$expected  actual=$actual"
+          test "$actual" = "$expected"
       - name: Upload release asset
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "${{ github.event.release.tag_name }}" chatnotify.pyz --clobber
+        run: gh release upload "$TAG" chatnotify.pyz --clobber
