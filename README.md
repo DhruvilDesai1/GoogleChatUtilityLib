@@ -207,9 +207,23 @@ way to answer "why is it using that value?".
 | `--only-on-failure` | — | — | Send the finish card only when the run failed |
 | `--quiet` | — | — | Silence chatnotify's own stderr notes |
 
+`--project`, `--env`, `--webhook-url`, `--message-type` and `--quiet` work on all three
+subcommands, so you can check a webhook before committing anything:
+
+```bash
+chatnotify doctor --webhook-url "https://chat.googleapis.com/v1/spaces/..."
+```
+
+`--report` and `--only-on-failure` apply to `run` only, and `init` uses just
+`--project`.
+
 `PROJECT_NAME`, `ENVIRONMENT`, `MESSAGE_TYPE`, and `GOOGLE_CHAT_WEBHOOK_URL` are
 accepted as legacy aliases, so `.env` files written for the old Java library keep
 working unchanged.
+
+Anything in your command that looks like a credential — a `--token`, an `--api-key`, a
+`key=` query parameter, or your webhook URL — is replaced with `***` before the command
+is shown on the card.
 
 ### Enabling and silencing
 

@@ -55,6 +55,78 @@ def test_doctor_returns_one_when_webhook_unreachable(tmp_path, monkeypatch):
     assert cli.main(["doctor"]) == 1
 
 
+# --- Fix 5: doctor accepts the shared configuration flags ---
+
+
+def test_doctor_uses_webhook_url_from_the_flag(tmp_path, webhook, monkeypatch, capsys):
+    """You must be able to test a webhook URL before committing it to config."""
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr("chatnotify.config.os.environ", {})
+    assert cli.main(["doctor", "--webhook-url", webhook.url]) == 0
+    assert len(webhook.requests) == 1
+    assert "flag" in capsys.readouterr().out
+
+
+def test_doctor_accepts_project_and_env_flags(tmp_path, monkeypatch, capsys):
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr("chatnotify.config.os.environ", {})
+    cli.main(["doctor", "--project", "Flagged", "--env", "prod"])
+    out = capsys.readouterr().out
+    assert "Flagged" in out
+    assert "prod" in out
+
+
+# --- Fix 6: doctor is honest about CHATNOTIFY_DISABLED ---
+
+
+def test_doctor_sends_test_card_even_when_disabled_and_says_so(
+    tmp_path, webhook, monkeypatch, capsys
+):
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(
+        "chatnotify.config.os.environ",
+        {"CHATNOTIFY_WEBHOOK_URL": webhook.url, "CHATNOTIFY_DISABLED": "1"},
+    )
+    assert cli.main(["doctor"]) == 0
+    out = capsys.readouterr().out
+    assert "CHATNOTIFY_DISABLED" in out
+    assert "disabled" in out.lower()
+    assert "sending a test card anyway" in out.lower()
+    assert len(webhook.requests) == 1
+
+
+# --- Fix 7: the mask identifies the URL instead of hiding a wrong one ---
+
+
+def test_doctor_mask_reveals_scheme_and_host_but_not_the_credential(
+    tmp_path, monkeypatch, capsys
+):
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(
+        "chatnotify.config.os.environ",
+        {"CHATNOTIFY_WEBHOOK_URL": "http://intranet.evil.local/collect?x=SECRETVALUE"},
+    )
+    monkeypatch.setattr(cli.transport, "post", lambda *args, **kwargs: False)
+    cli.main(["doctor"])
+    out = capsys.readouterr().out
+    assert "http://intranet.evil.local/..." in out
+    assert "SECRETVALUE" not in out
+    assert "collect" not in out
+
+
+def test_doctor_mask_of_a_google_chat_url_shows_the_expected_host(tmp_path, monkeypatch, capsys):
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(
+        "chatnotify.config.os.environ",
+        {"CHATNOTIFY_WEBHOOK_URL": "https://chat.googleapis.com/v1/spaces/S/messages?key=SEKRIT"},
+    )
+    monkeypatch.setattr(cli.transport, "post", lambda *args, **kwargs: False)
+    cli.main(["doctor"])
+    out = capsys.readouterr().out
+    assert "https://chat.googleapis.com/..." in out
+    assert "SEKRIT" not in out
+
+
 def test_doctor_prints_version_and_machine_config_path(tmp_path, monkeypatch, capsys):
     monkeypatch.chdir(tmp_path)
     monkeypatch.setattr("chatnotify.config.os.environ", {})
